@@ -2,7 +2,6 @@
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
 import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
-import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_aws_sqs_suppression.dart';
 
@@ -50,51 +49,66 @@ Future<T> tracedAwsSQS<T>({
   final t = tracer ?? OTel.tracerProvider().getTracer('otel_aws_sqs');
   final span = t.startSpan('sqs $operation', kind: SpanKind.producer);
   try {
-    span.setStringAttribute('messaging.system', 'aws_sqs');
+    span.addAttributes(
+        OTel.attributes([OTel.attributeString('messaging.system', 'aws_sqs')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.queueUrl != null) {
-        span.setStringAttribute('messaging.destination.url', res.queueUrl!);
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString('messaging.destination.url', res.queueUrl!)
+        ]));
       }
       if (res.queueName != null) {
-        span.setStringAttribute('messaging.destination.name', res.queueName!);
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString('messaging.destination.name', res.queueName!)
+        ]));
       }
       if (res.fifo != null) {
-        span.setBoolAttribute('messaging.aws.sqs.fifo', res.fifo!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeBool('messaging.aws.sqs.fifo', res.fifo!)]));
       }
       if (res.messageId != null) {
-        span.setStringAttribute('messaging.message.id', res.messageId!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('messaging.message.id', res.messageId!)]));
       }
       if (res.messageGroupId != null) {
-        span.setStringAttribute(
-          'messaging.aws.sqs.message_group_id',
-          res.messageGroupId!,
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString(
+            'messaging.aws.sqs.message_group_id',
+            res.messageGroupId!,
+          )
+        ]));
       }
       if (res.messageCount != null) {
-        span.setIntAttribute(
-          'messaging.batch.message_count',
-          res.messageCount!,
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeInt(
+            'messaging.batch.message_count',
+            res.messageCount!,
+          )
+        ]));
       }
       if (res.region != null) {
-        span.setStringAttribute('cloud.region', res.region!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('cloud.region', res.region!)]));
       }
       if (res.statusCode != null) {
-        span.setIntAttribute('http.response.status_code', res.statusCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
       }
       if (res.errorCode != null) {
-        span.setStringAttribute('sqs.error.code', res.errorCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('sqs.error.code', res.errorCode!)]));
       }
-      final fail =
-          res.errorCode != null ||
+      final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.setStringAttribute(
-          ErrorResource.errorType.key,
-          res.errorCode ?? 'sqs.error',
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString(
+            ErrorResource.errorType.key,
+            res.errorCode ?? 'sqs.error',
+          )
+        ]));
         span.setStatus(SpanStatusCode.Error, res.errorMessage);
       }
     }
